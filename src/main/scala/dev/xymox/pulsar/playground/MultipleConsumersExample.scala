@@ -47,14 +47,13 @@ object MultipleConsumersExample extends App {
   } yield ()
 
   def consumerProgram(consumer: Consumer[String], consumerName: String): ZIO[Console, Throwable, Unit] = for {
-    _       <- ZIO.effect(consumer.seekLatest()) // needed?
     message <- consumer.receiveAsync
     _       <- putStrLn(s"==> [${consumerName}] Consumed message: ${message.messageId} - Message: ${message.value}")
     _       <- consumer.acknowledgeAsync(message.messageId)
   } yield ()
 
   val forever: Schedule[Any, Any, Long]                  = Schedule.forever
-  val producerSchedule: Schedule[Any, Any, (Long, Long)] = forever && Schedule.spaced(1.seconds)
+  val producerSchedule: Schedule[Any, Any, (Long, Long)] = forever && Schedule.spaced(10.milliseconds)
 
   val program: ZIO[Console with Clock, Throwable, Unit] = for {
     _  <- putStrLn("Starting up...")
@@ -62,9 +61,10 @@ object MultipleConsumersExample extends App {
     c1 <- consumerProgram(primaryConsumer, "primary-consumer").repeat(forever).fork
     c2 <- consumerProgram(secondaryConsumer, "secondary-consumer").repeat(forever).fork
     p  <- producerProgram.repeat(producerSchedule).fork
-    _  <- putStrLn("[Press Any Key to Stop]") *> getStrLn *> c1.interrupt *> c2.interrupt *> p.interrupt *> ZIO.effect(primaryConsumer.close()) *> ZIO.effect(
-      secondaryConsumer.close()
-    ) *> ZIO.effect(
+    _  <- putStrLn("[Press Any Key to Stop]") *> getStrLn *> c1.interrupt *> c2.interrupt *> p.interrupt *> ZIO.effect(primaryConsumer.close()) *> ZIO
+      .effect(
+        secondaryConsumer.close()
+      ) *> ZIO.effect(
       producer.close()
     ) *> putStrLn("Stopped.")
   } yield ()
