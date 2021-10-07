@@ -1,0 +1,25 @@
+version: '3.9'
+services:
+  database:
+    image: "postgres" # use latest official postgres version
+    ports:
+      - 5432:5432
+    env_file:
+      - database.env # configure postgres
+    volumes:
+      - database-data:/var/lib/postgresql/data/ # persist data even if container shuts down
+  pulsar:
+    image: "apachepulsar/pulsar:latest"
+    ports:
+      - 6650:6650
+      - 8080:8080
+    environment:
+        PULSAR_MEM: " -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g"
+    command: "bin/pulsar standalone"
+    volumes:
+      - pulsarconf:/pulsar/conf
+      - pulsardata:/pulsar/data
+volumes:
+  database-data:
+  pulsardata:
+  pulsarconf:
