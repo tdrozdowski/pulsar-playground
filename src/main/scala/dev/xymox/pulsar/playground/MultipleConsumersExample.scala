@@ -61,7 +61,10 @@ object MultipleConsumersExample extends App {
     c1 <- consumerProgram(primaryConsumer, "primary-consumer").repeat(forever).fork
     c2 <- consumerProgram(secondaryConsumer, "secondary-consumer").repeat(forever).fork
     p  <- producerProgram.repeat(producerSchedule).fork
-    _  <- putStrLn("[Press Any Key to Stop]") *> getStrLn *> c1.interrupt *> c2.interrupt *> p.interrupt *> ZIO.effect(primaryConsumer.close()) *> ZIO
+    p2 <- producerProgram.repeat(producerSchedule).fork
+    _  <- putStrLn("[Press Any Key to Stop]") *> getStrLn *> c1.interrupt *> c2.interrupt *> p.interrupt *> p2.interrupt *> ZIO.effect(
+      primaryConsumer.close()
+    ) *> ZIO
       .effect(
         secondaryConsumer.close()
       ) *> ZIO.effect(
